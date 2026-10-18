@@ -1,0 +1,11 @@
+{
+  "cpu": "Isolated venv, requirements.txt, runtime verified",
+  "gpu": "Clean isolated venv from a verified bootstrap install; promoted to the default runtime",
+  "gpu_python": "3.12",
+  "gpu_torch": "2.9.1+cu130",
+  "gpu_torchvision": "0.24.1+cu130",
+  "legacy_environments": [
+    "environment/gpu.legacy-1792320562445596044"
+  ],
+  "validation_report": "outputs/setup_validation.json"
+}

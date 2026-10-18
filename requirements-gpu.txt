@@ -1,0 +1,7 @@
+-r requirements.txt
+# Install torch/torchvision through setup.sh (backend selected for this machine).
+timm==1.0.20
+transformers==4.57.0
+einops==0.8.1
+opencv-python-headless==4.11.0.86
+Pillow==11.3.0

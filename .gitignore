@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv*/
+environment/cpu/
+environment/gpu/
+environment/*.legacy*/
+outputs/
+data/
+weights/
+*.log
