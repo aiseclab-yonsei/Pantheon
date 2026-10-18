@@ -1,76 +1,87 @@
-# Pantheon (Effort) 재현 패키지
+# Pantheon (Effort) Reproduction Package
 
-기존 Pantheon(Effort)의 Table 5 결과를 재현하고, 새로운 얼굴 이미지에 QCN → CR-FIQA(L) → Effort → Pantheon 추론을 실행하는 독립 작업 폴더입니다.
+> 🎉 **This paper has been accepted to ACSAC 2026** (Annual Computer Security Applications Conference).
 
-원본 `/home/compu/eunbi/iqa/0.module/analysis/qcn_crfiqa`, QCN, CR-FIQA 및 Effort 코드는 수정하지 않았습니다. 필요한 자료를 **복사한 후 이 폴더 안에서만** 실행 코드와 환경을 정리했습니다. 데이터·가중치는 심볼릭 링크가 아닌 실제 파일 복사본입니다.
+Official code for the paper:
 
-## 바로 실행
+**No One Model to Rule Them All: A Quality-Adaptive Ensemble Defense against Quality-Shift Adversaries in Deepfake Detection**
 
-GitHub에는 실행 환경 폴더를 올리지 않습니다. Python 3.11~3.13이 설치된 Linux x86_64에서 `bash setup.sh`를 실행하면 독립 환경을 만들고 필요한 패키지를 설치·검증합니다. NVIDIA GPU가 있으면 지원 런타임에 맞는 PyTorch를 선택합니다. 이 서버에는 데이터·가중치 복사본도 준비되어 있습니다.
+Eunbi Hwang, Hyunseok Lee, Taekyoung Kwon\*
+Graduate School of Information, Yonsei University, Seoul, South Korea
+
+\* Corresponding author
+
+A standalone working directory that reproduces the Table 5 results of the original Pantheon (Effort) and runs the QCN → CR-FIQA(L) → Effort → Pantheon inference pipeline on new face images.
+
+The original `/home/compu/eunbi/iqa/0.module/analysis/qcn_crfiqa`, QCN, CR-FIQA, and Effort code were left unmodified. The required materials were **copied, and the runnable code and environment were organized entirely within this folder**. Data and weights are real file copies, not symbolic links.
+
+## Quick Start
+
+The runtime environment folders are not uploaded to GitHub. On Linux x86_64 with Python 3.11–3.13 installed, running `bash setup.sh` creates an isolated environment and installs and verifies the required packages. If an NVIDIA GPU is present, it selects a PyTorch build matching the supported runtime. Copies of the data and weights are also prepared on this server.
 
 ```bash
 cd Pantheon
 
-# 환경 자동 설치: NVIDIA GPU 감지 시 CPU 재현 환경과 GPU 추론 환경 모두 설치
+# Automatic environment setup: installs both the CPU reproduction and GPU inference environments when an NVIDIA GPU is detected
 bash setup.sh
 
-# CPU 데모: FF++로 gate 학습 후 Celeb-DF-v1의 AUC 재현
+# CPU demo: train the gate on FF++ and reproduce the Celeb-DF-v1 AUC
 bash scripts/demo.sh
 
-# Table 5 전체 재현: FF++ 3개 압축 수준 + 교차 데이터셋 10개
+# Full Table 5 reproduction: 3 FF++ compression levels + 10 cross-datasets
 bash scripts/reproduce.sh
 
-# Python 진입점을 직접 호출할 때
+# Calling the Python entry point directly
 environment/cpu/bin/python main.py --all-models
 
-# 이미지 8장: 품질 측정부터 Pantheon 예측까지 실제 모델 추론
+# 8 images: real model inference from quality measurement to Pantheon prediction
 bash scripts/demo_images.sh
 
-# 원본 파일의 크기·수정 시각 유지 및 결과 일치 확인
+# Verify that original files keep their size and modification time, and that results match
 environment/cpu/bin/python scripts/verify.py --check-originals
 ```
 
-전체 재현은 수백만 프레임의 저장 점수를 읽기 때문에 데모보다 오래 걸립니다. 기본 CPU 스레드는 4개이며 `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS` 환경 변수로 조절할 수 있습니다.
+Full reproduction reads stored scores for millions of frames, so it takes longer than the demo. The default is 4 CPU threads, adjustable via the `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, and `MKL_NUM_THREADS` environment variables.
 
-## 구성
+## Layout
 
 ```text
 pantheon/
-  core.py          원본의 활성 수치 계산 함수, 중복 정의·주석 처리 실험 제거
-  pipeline.py      gate 학습, 전체 벤치마크 평가, 표·그림·기준값 비교
-  infer.py         이미지에서 QCN, CR-FIQA, Effort, Pantheon 추론
-  quality.py       기존 FF++ 기준 품질 정규화
-  prepare.py       품질 점수 정규화와 모델 예측 CSV 병합
-  score.py         기존/신규 merged CSV에 Pantheon 적용
+  core.py          Active numerical functions from the original; duplicate definitions and commented-out experiments removed
+  pipeline.py      Gate training, full benchmark evaluation, tables, figures, and reference comparison
+  infer.py         QCN, CR-FIQA, Effort, and Pantheon inference on images
+  quality.py       Quality normalization based on the original FF++ statistics
+  prepare.py       Quality score normalization and merging with model prediction CSVs
+  score.py         Apply Pantheon to existing/new merged CSVs
 data/
-  merged/          평가에 사용된 11개 merged CSV 복사본
-  standardized/    11개 표준화 품질 CSV와 normalization_params.json
-  quality_raw/     표준화 이전 CR-FIQA+QCN 품질 CSV 복사본
+  merged/          Copies of the 11 merged CSVs used for evaluation
+  standardized/    11 standardized quality CSVs and normalization_params.json
+  quality_raw/     Copies of the CR-FIQA+QCN quality CSVs before standardization
 weights/
-  qcn_spaq.pth     QCN SPAQ 학습 가중치
+  qcn_spaq.pth     QCN weights trained on SPAQ
   crfiqa_l.pth     CR-FIQA(L), iresnet100
-  effort/          c23, q1~q4 및 비교용 raw, c40, all 가중치
-vendor/            필요한 QCN·CR-FIQA 모델 구현과 원 프로젝트 설명
+  effort/          c23, q1–q4, and raw, c40, all weights for comparison
+vendor/            Required QCN and CR-FIQA model implementations and original project descriptions
 demo/
-  input.csv        실물 얼굴 crop 8장의 경로, 정답 및 영상 ID
-  images/          복사한 이미지 파일, 원래 영상/프레임 구조 유지
-reference/         기존 결과 CSV·그림, CLIP 설정, 복사 출처와 SHA-256
-archive/           수정 전 원본 분석·전처리·추론 코드, 참고용
+  input.csv        Paths, labels, and video IDs for 8 real face crops
+  images/          Copied image files, preserving the original video/frame structure
+reference/         Original result CSVs and figures, CLIP config, copy sources and SHA-256
+archive/           Original analysis, preprocessing, and inference code before modification, for reference
 environment/
-  cpu/             별도로 설치한 CPU 재현 환경
-  gpu/             setup으로 준비한 독립 GPU 추론 환경
-  gpu.legacy-*/    예전 복사 환경의 보관본 (Git 제외)
-  *.freeze.txt     설치 패키지 버전 기록
-outputs/           새 실행 결과와 검증 기록
+  cpu/             Separately installed CPU reproduction environment
+  gpu/             Isolated GPU inference environment prepared by setup
+  gpu.legacy-*/    Archived copy of the old copied environment (excluded from Git)
+  *.freeze.txt     Record of installed package versions
+outputs/           New run results and verification records
 ```
 
-`archive/`는 원본 보존용입니다. 실행 진입점은 `scripts/`와 `pantheon/`입니다. 원본에 남아 있던 절대 경로, 중간 실험 주석, 사용하지 않는 UI 강제 종료와 GPU 번호 강제 지정은 새 실행 경로에서 제거했습니다.
+`archive/` is kept to preserve the originals. The execution entry points are `scripts/` and `pantheon/`. Absolute paths, intermediate experiment comments, unused forced UI termination, and forced GPU index assignment left in the original were removed from the new execution path.
 
-## 재현 기준과 결과
+## Reproduction Reference and Results
 
-기준 파일은 `reference/ALL_results_frame_video_auc_with_deltas.csv`입니다. `model=ens_adapt`의 `video_auc`가 Pantheon 값이며 단위는 %입니다.
+The reference file is `reference/ALL_results_frame_video_auc_with_deltas.csv`. The `video_auc` for `model=ens_adapt` is the Pantheon value, in %.
 
-| 평가 데이터셋 | Pantheon video AUC (%) |
+| Evaluation dataset | Pantheon video AUC (%) |
 |---|---:|
 | FF++ raw | 100.00 |
 | FF++ c23 | 100.00 |
@@ -85,39 +96,39 @@ outputs/           새 실행 결과와 검증 기록
 | KoDF | 93.38 |
 | DF40 | 82.63 |
 | DF-eval | 68.50 |
-| 교차 데이터셋 10개 평균 | **90.61** |
+| Mean over 10 cross-datasets | **90.61** |
 
-FF++ 세 값의 평균은 99.93%, 교차 데이터셋 평균의 반올림 전 값은 90.61374343684233%입니다. Table 5의 다른 논문 방법(DML 등)은 이 패키지의 실행 대상에 포함되지 않습니다.
+The mean of the three FF++ values is 99.93%, and the unrounded cross-dataset mean is 90.61374343684233%. Other methods from Table 5 (DML, etc.) are not included in this package.
 
-재현 코드가 생성하는 주요 파일:
+Main files produced by the reproduction code:
 
-- `outputs/reproduction/results.csv`: Pantheon과 Effort 비교 모델의 frame/video AUC
-- `outputs/reproduction/pantheon_table5.csv`: Pantheon 13개 평가값
-- `outputs/reproduction/summary.json`: 교차 데이터셋 평균
-- `outputs/reproduction/table5.png`: 재생성한 결과표
-- `outputs/reproduction/reference_comparison.csv`: 기존 결과와의 차이
-- `outputs/reproduction/calibration/pantheon.joblib`: 학습된 gate와 RBF 중심
+- `outputs/reproduction/results.csv`: frame/video AUC for Pantheon and the Effort comparison models
+- `outputs/reproduction/pantheon_table5.csv`: the 13 Pantheon evaluation values
+- `outputs/reproduction/summary.json`: cross-dataset mean
+- `outputs/reproduction/table5.png`: regenerated results table
+- `outputs/reproduction/reference_comparison.csv`: differences from the original results
+- `outputs/reproduction/calibration/pantheon.joblib`: trained gate and RBF centers
 
-평가 시 프레임 점수를 영상별 평균으로 묶고, 서로 다른 정답이 섞인 영상은 제외합니다. FFIW의 real/fake 영상 구분, Wilddeepfake의 충돌 방지 규칙, DF40의 비영상 생성기 제외 규칙도 원본과 같습니다. 기준값 비교가 허용 오차 `1e-8` percentage point를 넘으면 실행이 실패합니다. 전체 데이터가 포함되지 않은 데모의 평균은 해당 데모 데이터셋의 평균입니다.
+During evaluation, frame scores are averaged per video, and videos with mixed ground-truth labels are excluded. The FFIW real/fake video split, the Wilddeepfake collision-avoidance rule, and the DF40 rule excluding non-video generators are the same as in the original. The run fails if the comparison against the reference exceeds a tolerance of `1e-8` percentage points. Since the demo does not include the full data, the demo's mean is the mean over the demo datasets only.
 
-## Pantheon 계산 설정
+## Pantheon Configuration
 
-- FF++ 표준화 품질 CSV에서 Q1~Q4의 RBF 중심 계산, sigma=1.0
-- FF++의 모든 real 프레임과 c40 fake 프레임으로 gate 학습
-- gate 학습에는 c23 점수가 `(0.05, 0.95)` 밖인 고확신 프레임 사용
-- gate 입력: `conf, q_std, q_margin, q_range`
+- RBF centers for Q1–Q4 computed from the FF++ standardized quality CSV, sigma=1.0
+- Gate trained on all FF++ real frames and c40 fake frames
+- Gate training uses high-confidence frames whose c23 score lies outside `(0.05, 0.95)`
+- Gate inputs: `conf, q_std, q_margin, q_range`
 - HistGradientBoosting: depth=4, learning_rate=0.05, max_iter=400, seed=0
-- 낮은 확신 구간은 RBF soft score 사용
-- 나머지는 gate의 오답 확률에 따라 global/soft 혼합 비율 조절
-- lambda 범위 0.8→0.2, 오답 확률 경계 0.05와 0.40
+- RBF soft score used in the low-confidence region
+- Elsewhere, the global/soft mixing ratio is adjusted according to the gate's error probability
+- lambda range 0.8→0.2, error-probability thresholds 0.05 and 0.40
 
-정규화 파라미터는 `data/standardized/normalization_params.json`에 보존했습니다. 새 입력에는 이 기준을 그대로 적용합니다.
+The normalization parameters are preserved in `data/standardized/normalization_params.json`. These same parameters are applied to new inputs.
 
-## 새 이미지 실행
+## Running on New Images
 
-입력은 **이미 추출한 얼굴 crop 이미지**입니다. 원본 영상의 얼굴 검출·정렬 과정은 포함하지 않습니다. 동봉한 데모도 실제 기존 평가 얼굴 crop을 복사한 것입니다.
+The input is **already-extracted face crop images**. Face detection and alignment from the source video are not included. The bundled demo also consists of real face crops copied from the original evaluation.
 
-입력 CSV에는 헤더가 필요하며 `path`는 CSV 파일 위치를 기준으로 한 상대 경로 또는 절대 경로입니다.
+The input CSV requires a header, and `path` is either relative to the CSV file's location or absolute.
 
 ```csv
 path,label,video_id
@@ -125,28 +136,28 @@ images/video_a/000.png,0,video_a
 images/video_b/000.png,1,video_b
 ```
 
-`label`은 0=real, 1=fake입니다. 추론만 할 때는 생략할 수 있습니다. 추론 점수 계산에 입력 정답은 사용하지 않습니다. `video_id`를 제공하면 영상별 평균 점수도 저장합니다.
+`label` is 0=real, 1=fake. It can be omitted for inference only; input labels are not used when computing inference scores. If `video_id` is provided, per-video mean scores are also saved.
 
 ```bash
 bash scripts/demo_images.sh --input /absolute/path/input.csv \
   --output outputs/my_images --device cuda:0
 
-# 비교용 raw/c40/all까지 총 8개 Effort 모델을 실행하려면
+# To run all 8 Effort models, including raw/c40/all for comparison
 bash scripts/demo_images.sh --all-models
 
-# 동일한 추론 코드를 CPU에서 실행할 수도 있습니다. 대형 모델이므로 느립니다.
+# The same inference code can also run on CPU. It is slow because the models are large.
 bash scripts/demo_images.sh --device cpu
 ```
 
-출력은 `quality_raw.csv`, `merged_predictions.csv`, `frame_predictions.csv`이며 `ens_adapt`가 최종 fake 점수입니다. 기본 판정 경계는 0.5입니다. 영상 ID가 있으면 `video_predictions.csv`도 생성됩니다.
+The outputs are `quality_raw.csv`, `merged_predictions.csv`, and `frame_predictions.csv`, where `ens_adapt` is the final fake score. The default decision threshold is 0.5. If video IDs are provided, `video_predictions.csv` is also generated.
 
-QCN은 SPAQ checkpoint, RGB/Resize(384)/ImageNet 정규화, 원본·좌우반전 특징 평균 및 score pivot 보간을 사용합니다. CR-FIQA는 원본처럼 BGR, 112×112 입력을 사용합니다. Effort는 RGB, bicubic 224×224, CLIP 정규화를 적용합니다. Effort checkpoint의 SVD main/residual 가중치를 합쳐 같은 dense 연산을 구성하므로 별도 CLIP 모델 다운로드가 필요하지 않습니다. 모든 checkpoint는 strict load로 확인합니다.
+QCN uses the SPAQ checkpoint, RGB/Resize(384)/ImageNet normalization, averaging of features from the original and horizontally flipped image, and score-pivot interpolation. CR-FIQA uses BGR, 112×112 input, as in the original. Effort applies RGB, bicubic 224×224, and CLIP normalization. The SVD main/residual weights in the Effort checkpoint are combined to form the same dense operations, so no separate CLIP model download is required. All checkpoints are verified with strict loading.
 
-**저장 CSV를 이용한 표 재현과 이미지 재추론은 구분됩니다.** 이미지 재추론은 CUDA 연산·배치 크기·혼합 정밀도에 따라 기존 저장 점수와 작은 차이가 날 수 있습니다. QCN의 기본 GPU 실행은 원본처럼 float16 autocast를 사용하며 `--no-amp`로 끌 수 있습니다. 데모의 기존 점수는 `reference/demo_stored_scores.csv`에 보존되어 있습니다.
+**Table reproduction from stored CSVs and re-inference from images are distinct.** Image re-inference may differ slightly from the original stored scores depending on CUDA operations, batch size, and mixed precision. By default, QCN on GPU uses float16 autocast as in the original, which can be disabled with `--no-amp`. The demo's original scores are preserved in `reference/demo_stored_scores.csv`.
 
-## 품질·예측 CSV부터 병합하기
+## Merging from Quality and Prediction CSVs
 
-직접 구한 품질 CSV는 `path,cr_fiqa,qcn` 열을, 예측 CSV는 `path,label,c23,q1,q2,q3,q4` 열을 사용합니다. 품질 CSV의 `rel_path`, `image_path` 열 이름도 허용합니다. raw/c40/all 예측 열은 선택입니다. 경로는 두 파일에서 동일한 키여야 하며, FF++의 첫 데이터셋 디렉터리명에 붙은 `_raw/_c23/_c40`는 원본처럼 정규화합니다. 중복·누락 키와 NaN은 조용히 건너뛰지 않고 오류로 처리합니다.
+Your own quality CSV uses the columns `path,cr_fiqa,qcn`, and the prediction CSV uses `path,label,c23,q1,q2,q3,q4`. The column names `rel_path` and `image_path` are also accepted in the quality CSV. The raw/c40/all prediction columns are optional. Paths must be identical keys in both files; the `_raw/_c23/_c40` suffix on the first FF++ dataset directory name is normalized as in the original. Duplicate or missing keys and NaNs are raised as errors rather than silently skipped.
 
 ```bash
 environment/cpu/bin/python -m pantheon.prepare \
@@ -159,105 +170,118 @@ environment/cpu/bin/python -m pantheon.score \
   --output outputs/prepared/pantheon_predictions.csv
 ```
 
-원본 추론 결과의 모델별 `frame_predictions.csv`에 해당하는 예측값은 이미 `data/merged/`에 모델별 열로 들어 있습니다. 이 폴더는 다른 실험 전체나 원본 데이터셋 전체를 복제하지 않습니다. Table 5 재현에 필요한 CSV 전체와 추론에 필요한 가중치·모델 코드, 데모 이미지를 포함합니다.
+The predictions corresponding to the per-model `frame_predictions.csv` from the original inference are already included as per-model columns in `data/merged/`. This folder does not replicate other experiments or the full original datasets. It contains all CSVs needed for Table 5 reproduction, the weights and model code needed for inference, and the demo images.
 
-## 환경 자동 설치
+## Automatic Environment Setup
 
-환경 디렉터리를 배포하거나 Conda 환경을 복사할 필요가 없습니다. Linux x86_64, Python **3.11~3.13**, `venv`가 필요하며, setup은 설치된 호환 Python을 자동으로 찾습니다. 시스템 Python·기존 QCN/CR-FIQA 프로젝트는 수정하지 않고 프로젝트 안의 독립 환경에만 설치합니다.
+There is no need to distribute the environment directory or copy a Conda environment. Linux x86_64, Python **3.11–3.13**, and `venv` are required, and setup automatically finds a compatible installed Python. It does not modify the system Python or the existing QCN/CR-FIQA projects, and installs only into an isolated environment inside the project.
 
 ```bash
-# 자동 선택: GPU 사용 가능하면 CPU + GPU, 없으면 CPU 표 재현 환경
+# Automatic selection: CPU + GPU if a GPU is available, otherwise the CPU table-reproduction environment
 bash setup.sh
 
-# 저장 CSV로 표를 재현하는 데 필요한 가벼운 환경만 설치
+# Install only the lightweight environment needed to reproduce the table from stored CSVs
 bash setup.sh cpu
 
-# NVIDIA GPU용 이미지 추론 환경과 CPU 표 재현 환경 설치
+# Install the NVIDIA GPU image-inference environment and the CPU table-reproduction environment
 bash setup.sh gpu
 
-# NVIDIA GPU 없이 이미지 모델까지 실행하려면 CPU용 PyTorch 설치
+# Install CPU PyTorch to run the image models without an NVIDIA GPU
 bash setup.sh inference-cpu
 
-# 설치 상태만 확인. 패키지 변경이나 다운로드 없음
+# Check installation status only. No package changes or downloads
 bash setup.sh --check
 ```
 
-자동 설치는 다음 작업을 수행합니다.
+Automatic setup performs the following steps:
 
-1. 호환 Python 검색 및 `environment/cpu`, 필요 시 `environment/gpu` 생성
-2. `requirements.txt`의 NumPy/Pandas/scikit-learn 등 고정 버전 설치
-3. `nvidia-smi`가 보고한 지원 CUDA 버전에 따라 cu130/cu128/cu126 PyTorch wheel 선택
-4. QCN·CR-FIQA·Effort에 필요한 패키지 설치
-5. `pip check`, 실제 모델 모듈 import, 작은 CPU/GPU 연산으로 설치 검증
-6. 설치 성공 표시와 `environment/*.freeze.txt` 기록
+1. Find a compatible Python and create `environment/cpu`, and `environment/gpu` if needed
+2. Install pinned versions of NumPy/Pandas/scikit-learn, etc. from `requirements.txt`
+3. Select the cu130/cu128/cu126 PyTorch wheel based on the supported CUDA version reported by `nvidia-smi`
+4. Install the packages required by QCN, CR-FIQA, and Effort
+5. Verify the installation with `pip check`, imports of the actual model modules, and small CPU/GPU operations
+6. Write an installation success marker and record `environment/*.freeze.txt`
 
-기존에 복사해 둔 Conda 환경이 있으면 `environment/gpu.legacy-*`에 보관하고, 충돌 없는 새 venv를 만듭니다. 보관본은 GitHub 업로드에서 제외합니다.
+If a previously copied Conda environment exists, it is archived as `environment/gpu.legacy-*` and a new, conflict-free venv is created. The archive is excluded from GitHub uploads.
 
-환경이 있고 requirements가 그대로이면 다운로드를 생략하고 검증만 합니다. 설치 도중 실패하면 성공 표시가 남지 않으므로 같은 명령을 다시 실행해서 설치를 이어갈 수 있습니다. `--force`는 패키지 설치 단계를 다시 실행합니다.
+If the environment exists and the requirements are unchanged, downloads are skipped and only verification runs. If installation fails partway, no success marker is left, so rerunning the same command resumes the installation. `--force` reruns the package installation step.
 
-GPU 환경은 디렉터리 이름이 `gpu`지만, `inference-cpu` 모드에서는 CPU용 PyTorch가 들어갑니다. 별도 환경 활성화는 필요 없습니다. 데모 스크립트도 환경이 없으면 먼저 설치를 수행합니다.
+The GPU environment's directory is named `gpu`, but in `inference-cpu` mode it contains CPU PyTorch. No separate environment activation is needed. The demo scripts also run setup first if the environment does not exist.
 
 ```bash
-# Python 직접 지정
+# Specify Python directly
 PYTHON=python3.12 bash setup.sh
 
-# CUDA backend 직접 지정
+# Specify the CUDA backend directly
 bash setup.sh gpu --torch-backend cu128
 
-# 환경 위치 변경
+# Change the environment location
 bash setup.sh --env-root /path/to/pantheon-envs
 PANTHEON_ENV_ROOT=/path/to/pantheon-envs bash scripts/demo_images.sh
 ```
 
-GPU 선택은 드라이버가 보고한 최대 CUDA 지원 버전을 기준으로 합니다. 실제 CUDA 연산이 실패하면 setup도 실패하며 원인을 출력합니다. 호스트의 NVIDIA 드라이버는 운영체제에 설치되어 있어야 합니다. CUDA Toolkit이나 Conda는 별도로 설치할 필요가 없습니다. 더 오래된 드라이버를 사용하는 환경은 드라이버를 갱신하거나 `inference-cpu` 모드를 사용하세요.
+GPU selection is based on the maximum CUDA version supported as reported by the driver. If actual CUDA operations fail, setup also fails and prints the cause. The host NVIDIA driver must be installed in the operating system. The CUDA Toolkit and Conda do not need to be installed separately. For environments with older drivers, update the driver or use `inference-cpu` mode.
 
-패키지 정의는 역할별로 나누었습니다.
+Package definitions are split by role:
 
-- `requirements.txt`: CPU 표 재현의 고정 버전
-- `requirements-gpu.txt`: QCN·CR-FIQA·Effort 추론 패키지
-- `requirements-torch-cu130.txt`, `requirements-torch-cu128.txt`, `requirements-torch-cu126.txt`: CUDA별 PyTorch 2.9.1 / torchvision 0.24.1
-- `requirements-torch-cpu.txt`: CPU용 PyTorch / torchvision
+- `requirements.txt`: pinned versions for CPU table reproduction
+- `requirements-gpu.txt`: QCN, CR-FIQA, and Effort inference packages
+- `requirements-torch-cu130.txt`, `requirements-torch-cu128.txt`, `requirements-torch-cu126.txt`: PyTorch 2.9.1 / torchvision 0.24.1 per CUDA version
+- `requirements-torch-cpu.txt`: CPU PyTorch / torchvision
 
-PyTorch wheel은 공식 인덱스에서 먼저 설치하고, 나머지 패키지는 PyPI에서 설치합니다. [PyTorch 공식 설치 조합](https://pytorch.org/get-started/previous-versions/#v291)을 따릅니다. `requirements-gpu.txt`만 단독 설치하기보다 `setup.sh`를 실행하세요.
+PyTorch wheels are installed first from the official index, and the remaining packages from PyPI, following the [official PyTorch installation combinations](https://pytorch.org/get-started/previous-versions/#v291). Run `setup.sh` rather than installing `requirements-gpu.txt` on its own.
 
-### GitHub 배포와 데이터·가중치
+### GitHub Distribution, Data, and Weights
 
-`.gitignore`에 `environment/cpu/`, `environment/gpu/`, `data/`, `weights/`, `outputs/`를 지정했습니다. 코드·설치 스크립트·requirements·README·데모 이미지·기존 결과표만 GitHub에 올릴 수 있습니다. 현재 로컬 파일은 삭제하지 않습니다.
+`.gitignore` excludes `environment/cpu/`, `environment/gpu/`, `data/`, `weights/`, and `outputs/`. Only the code, setup scripts, requirements, README, demo images, and original result tables are uploaded to GitHub. Local files are not deleted.
 
-setup은 **실행 환경을 자동 설치**합니다. 평가 CSV와 학습 가중치는 Python 패키지가 아니므로 별도 파일 배포가 필요합니다. 아직 공개 다운로드 주소를 정하지 않았으므로 임의의 URL에서 다운로드하지 않습니다. 배포한 파일은 다음 구조로 놓으세요.
+setup **installs the runtime environment automatically**. The evaluation CSVs and trained weights are not Python packages and must be distributed separately. Since no public download location has been decided yet, nothing is downloaded from arbitrary URLs. Place the distributed files in the following structure:
 
 ```text
-data/merged/merged_{dataset}.csv        전체 표 재현: DATASETS의 11개 파일
+data/merged/merged_{dataset}.csv        Full table reproduction: the 11 files in DATASETS
 data/standardized/FaceForensics++_standardized.csv
-data/standardized/normalization_params.json  이미지 품질 정규화
+data/standardized/normalization_params.json  Image quality normalization
 weights/qcn_spaq.pth
 weights/crfiqa_l.pth
 weights/effort/c23.pth
 weights/effort/q1.pth ~ q4.pth
-weights/effort/raw.pth, c40.pth, all.pth  --all-models 선택 시 추가
+weights/effort/raw.pth, c40.pth, all.pth  Additionally required with --all-models
 ```
 
-CPU 데모는 FF++와 Celeb-DF-v1 merged CSV, FF++ standardized CSV가 필요합니다. 이미지 데모도 첫 gate 학습을 위해 FF++ CSV 두 개가 필요합니다. 이미 학습한 `pantheon.joblib`가 있으면 `--calibration /path/to/pantheon.joblib`로 전달해 FF++ CSV 없이 추론할 수 있습니다. 이 경우에도 품질 정규화 JSON과 모델 가중치는 필요합니다. 누락된 기본 파일은 setup 검증에서 목록으로 보여 주며, 환경 설치 완료 여부와 구분합니다.
+The CPU demo requires the FF++ and Celeb-DF-v1 merged CSVs and the FF++ standardized CSV. The image demo also needs the two FF++ CSVs for the initial gate training. If you already have a trained `pantheon.joblib`, pass it with `--calibration /path/to/pantheon.joblib` to run inference without the FF++ CSVs. The quality normalization JSON and model weights are still required in that case. Missing default files are listed during setup verification, separately from whether environment installation completed.
 
-## 복사 출처와 무결성
+## Copy Sources and Integrity
 
-`reference/copy_manifest.json`은 원본 경로, 복사 대상, 원본 크기·수정 시각, 복사본 SHA-256 및 수정 여부를 기록합니다. 데모 이미지는 `demo/input.csv`의 `source_key`로 원래 평가 프레임과 연결됩니다. 기존 판테온 분석 코드, 품질 추론 코드와 Effort detector는 `archive/`에 보존했습니다.
+`reference/copy_manifest.json` records the original paths, copy destinations, original sizes and modification times, SHA-256 of the copies, and whether each was modified. Demo images are linked to the original evaluation frames via `source_key` in `demo/input.csv`. The original Pantheon analysis code, quality inference code, and Effort detector are preserved in `archive/`.
 
 ```bash
 environment/cpu/bin/python scripts/verify.py --hashes --check-originals
 ```
 
-가중치 전체를 해시 검사하므로 시간이 걸릴 수 있습니다. 원본 접근 없이 확인할 때는 `--check-originals`를 생략하세요. 환경 디렉터리 전체는 파일 해시 manifest의 대상이 아니며 설치 패키지 기록을 별도로 보존합니다.
+This hashes all weights, so it may take a while. Omit `--check-originals` to verify without access to the originals. The environment directories are not covered by the file hash manifest; installed package records are preserved separately.
 
-## 이 폴더에서 완료한 검증
+## Verification Completed in This Folder
 
-- 독립 CPU 환경에서 전체 평가 실행: 영상 AUC 104개가 기존 CSV와 일치, 최대 차이 약 `1.42e-14` percentage point
-- Pantheon 13개 값의 최대 차이 0, 교차 데이터셋 평균 90.61374343684233%
-- 복사 GPU 환경에서 실제 이미지 8장에 QCN·CR-FIQA·Effort 8개 checkpoint·Pantheon 실행 완료
-- 품질 CSV 정규화/병합 → 별도 Pantheon 추론 왕복 결과 일치
-- CPU/GPU 환경 모두 `pip check` 통과; GPU 복사본의 사용하지 않는 충돌 패키지는 제거
-- 복사 대상 원본 파일의 크기와 수정 시각 유지 확인, 복사본 SHA-256 확인
+- Full evaluation run in the isolated CPU environment: all 104 video AUCs match the original CSV, with a maximum difference of about `1.42e-14` percentage points
+- Maximum difference of 0 across the 13 Pantheon values; cross-dataset mean 90.61374343684233%
+- QCN, CR-FIQA, all 8 Effort checkpoints, and Pantheon run successfully on 8 real images in the copied GPU environment
+- Round trip of quality CSV normalization/merging → separate Pantheon inference produces matching results
+- `pip check` passes in both CPU and GPU environments; unused conflicting packages removed from the GPU copy
+- Original files that were copied confirmed to retain their size and modification time; SHA-256 of copies verified
 
-검증 상세는 `outputs/validation.json`, `outputs/verification.json`, `outputs/integrity_verification.log`와 각 실행 로그에 저장되어 있습니다.
+Verification details are saved in `outputs/validation.json`, `outputs/verification.json`, `outputs/integrity_verification.log`, and each run's logs.
 
-자동 설치 추가 검증: 빈 환경에서 CPU 데모, CUDA 연산, 이미지 8장의 QCN·CR-FIQA·Effort 8개 모델 추론을 확인했습니다. 새 PyTorch 2.9.1 환경의 Pantheon 점수는 이전 환경과 일치했습니다. 결과는 `outputs/setup_validation.json`에 기록했습니다.
+Additional verification of automatic setup: the CPU demo, CUDA operations, and inference of QCN, CR-FIQA, and 8 Effort models on 8 images were confirmed starting from an empty environment. Pantheon scores in the new PyTorch 2.9.1 environment matched those of the previous environment. Results are recorded in `outputs/setup_validation.json`.
+
+## Citation
+
+If you find this work useful, please cite:
+
+```bibtex
+@inproceedings{hwang2026pantheon,
+  title     = {No One Model to Rule Them All: A Quality-Adaptive Ensemble Defense against Quality-Shift Adversaries in Deepfake Detection},
+  author    = {Hwang, Eunbi and Lee, Hyunseok and Kwon, Taekyoung},
+  booktitle = {Proceedings of the Annual Computer Security Applications Conference (ACSAC)},
+  year      = {2026}
+}
+```
